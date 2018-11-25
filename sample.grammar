@@ -1,3 +1,9 @@
-$digit = ONE | TWO | THREE | FOUR | FIVE | SIX | SEVEN | EIGHT | NINE | OH | ZERO;
-$name = [ STEVE ] YOUNG;
-( SENT-START ( DIAL <$digit> | (PHONE|CALL) $name) SENT-END )
+$nomor = SATU | DUA | TIGA | EMPAT | LIMA | ENAM | TUJUH | DELAPAN | SEMBILAN | SEPULUH | SEBELAS | DUABELAS | TIGABELAS | EMPATBELAS | LIMABELAS;
+$position = $nomor $nomor;
+
+$play = MAIN | MULAI;
+$surrender = NYERAH | MENYERAH;
+$undo = ULANG $nomor | BATAL $nomor;
+$place = TARUH $position | PASANG $position;
+
+( SENT-START ( $play | $surrender | $undo | $place) SENT-END )
