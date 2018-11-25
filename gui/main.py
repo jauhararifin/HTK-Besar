@@ -1,6 +1,10 @@
 #!/bin/python3
 
+import queue
+import subprocess
+from threading import Thread
 from graphics import *
+from pynput import keyboard
 
 window_size = 600
 
@@ -76,9 +80,15 @@ def put_item(state, x, y):
 			# check horizontal
 			n = 1
 			for i in range(1, 7):
-				if (x + i, y) in state['moves']: n += 1 else break
+				if (x + i, y) in state['moves']:
+					n += 1
+				else:
+					break
 			for i in range(1, 7):
-				if (x - i, y) in state['moves']: n += 1 else break
+				if (x - i, y) in state['moves']:
+					n += 1
+				else:
+					break
 			if n == 5:
 				return {
 					'inGame': True,
@@ -89,9 +99,15 @@ def put_item(state, x, y):
 			# check vertical
 			n = 1
 			for i in range(1, 7):
-				if (x, y + i) in state['moves']: n += 1 else break
+				if (x, y + i) in state['moves']:
+					n += 1
+				else:
+					break
 			for i in range(1, 7):
-				if (x, y - i) in state['moves']: n += 1 else break
+				if (x, y - i) in state['moves']:
+					n += 1
+				else:
+					break
 			if n == 5:
 				return {
 					'inGame': True,
@@ -102,9 +118,15 @@ def put_item(state, x, y):
 			# check diagonal 1
 			n = 1
 			for i in range(1, 7):
-				if (x + i, y + i) in state['moves']: n += 1 else break
+				if (x + i, y + i) in state['moves']:
+					n += 1
+				else:
+					break
 			for i in range(1, 7):
-				if (x - i, y - i) in state['moves']: n += 1 else break
+				if (x - i, y - i) in state['moves']:
+					n += 1
+				else:
+					break
 			if n == 5:
 				return {
 					'inGame': True,
@@ -115,9 +137,15 @@ def put_item(state, x, y):
 			# check diagonal 2
 			n = 1
 			for i in range(1, 7):
-				if (x + i, y - i) in state['moves']: n += 1 else break
+				if (x + i, y - i) in state['moves']:
+					n += 1
+				else:
+					break
 			for i in range(1, 7):
-				if (x - i, y + i) in state['moves']: n += 1 else break
+				if (x - i, y + i) in state['moves']:
+					n += 1
+				else:
+					break
 			if n == 5:
 				return {
 					'inGame': True,
@@ -175,11 +203,52 @@ def act(state, command_str):
 		return undo(state, num)
 	return state
 
-draw_state(win, state)
+class Recorder():
 
+	def __init__(self, queue):
+		self.recording = False
+		self.proc = None
+		self.queue = queue
+
+	def on_press(self, key):
+		if key == keyboard.Key.enter and not self.recording:
+			self.recording = True
+			self.proc = subprocess.Popen(
+				'arecord -r 16000 -V mono -c 1 -f S16_LE -d 10 rectest.wav'.split(' '),
+				stdout=subprocess.PIPE,
+				stderr=subprocess.PIPE,
+			)
+
+		if key == keyboard.Key.esc:
+			self.queue.put('QUIT')
+			return False
+
+	def on_release(self, key):
+		if key == keyboard.Key.enter and self.recording:
+			self.recording = False
+			self.proc.terminate()
+			self.proc.wait()
+			predict_prog = subprocess.Popen('./predict.sh rectest.wav'.split(' '),
+				stdout=subprocess.PIPE,
+				stderr=subprocess.PIPE
+			)
+			communication = predict_prog.communicate()
+			cmd = str(communication[0].decode()[:-1])
+			self.queue.put(cmd)
+
+	def start(self):
+		with keyboard.Listener(on_press=self.on_press, on_release=self.on_release) as listener:
+			listener.join()
+
+queue = queue.Queue()
+Thread(target=Recorder(queue).start).start()
+
+draw_state(win, state)
 while True:
-	command_str = input()
-	if command_str == 'QUIT':
+	command = queue.get()
+	print(command)
+	if command == 'QUIT':
 		break
-	state = act(state, command_str)
+	state = act(state, command)
 	draw_state(win, state)
+	queue.task_done()
