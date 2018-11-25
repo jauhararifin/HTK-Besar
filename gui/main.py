@@ -39,11 +39,19 @@ def draw_state(win, state):
 	for item in win.items[:]:
 		item.undraw()
 	win.update()
+
 	for i in range(1,15):
-		vertical = Line(Point(i * window_size // 15, 0), Point(i * window_size // 15, window_size))
+		vertical = Line(
+			Point(i * window_size // 15, 0),
+			Point(i * window_size // 15, window_size)
+		)
 		vertical.draw(win)
-		horizontal = Line(Point(0, i * window_size // 15), Point(window_size, i * window_size // 15))
+		horizontal = Line(
+			Point(0, i * window_size // 15), 
+			Point(window_size, i * window_size // 15)
+		)
 		horizontal.draw(win)
+	
 	for i, (x, y) in enumerate(state['moves']):
 		if i % 2 == 0:
 			line = Line(
@@ -57,10 +65,20 @@ def draw_state(win, state):
 			)
 			line.draw(win)
 		else:
-			circle = Circle(Point(x * window_size // 15 + window_size // 30, x * window_size // 15 + window_size // 30), window_size // 30 - 5)
+			circle = Circle(
+				Point(
+					x * window_size // 15 + window_size // 30,
+					y * window_size // 15 + window_size // 30
+				),
+				window_size // 30 - 5
+			)
 			circle.draw(win)
+	
 	if not state['inGame'] and state['winner'] is not None:
-		message = Text(Point(win.getWidth()/2, win.getHeight()/2), state['winner'] + ' Win')
+		message = Text(
+			Point(win.getWidth()/2, win.getHeight()/2),
+			state['winner'] + ' Win'
+		)
 		message.setSize(32)
 		message.draw(win)
 
@@ -76,83 +94,26 @@ def put_item(state, x, y):
 		x = x - 1
 		y = y - 1
 		if (x, y) not in state['moves']:
-
-			# check horizontal
-			n = 1
-			for i in range(1, 7):
-				if (x + i, y) in state['moves']:
-					n += 1
-				else:
-					break
-			for i in range(1, 7):
-				if (x - i, y) in state['moves']:
-					n += 1
-				else:
-					break
-			if n == 5:
-				return {
-					'inGame': True,
-					'winner': 'X' if len(state['moves']) % 2 == 0 else 'O',
-					'moves': state['moves'][:] + [(x,y)]
-				}
-
-			# check vertical
-			n = 1
-			for i in range(1, 7):
-				if (x, y + i) in state['moves']:
-					n += 1
-				else:
-					break
-			for i in range(1, 7):
-				if (x, y - i) in state['moves']:
-					n += 1
-				else:
-					break
-			if n == 5:
-				return {
-					'inGame': True,
-					'winner': 'X' if len(state['moves']) % 2 == 0 else 'O',
-					'moves': state['moves'][:] + [(x,y)]
-				}
-
-			# check diagonal 1
-			n = 1
-			for i in range(1, 7):
-				if (x + i, y + i) in state['moves']:
-					n += 1
-				else:
-					break
-			for i in range(1, 7):
-				if (x - i, y - i) in state['moves']:
-					n += 1
-				else:
-					break
-			if n == 5:
-				return {
-					'inGame': True,
-					'winner': 'X' if len(state['moves']) % 2 == 0 else 'O',
-					'moves': state['moves'][:] + [(x,y)]
-				}
-
-			# check diagonal 2
-			n = 1
-			for i in range(1, 7):
-				if (x + i, y - i) in state['moves']:
-					n += 1
-				else:
-					break
-			for i in range(1, 7):
-				if (x - i, y + i) in state['moves']:
-					n += 1
-				else:
-					break
-			if n == 5:
-				return {
-					'inGame': True,
-					'winner': 'X' if len(state['moves']) % 2 == 0 else 'O',
-					'moves': state['moves'][:] + [(x,y)]
-				}
-
+			positions = state['moves'][len(state['moves']) % 2::2]
+			direction = [(1,1),(1,-1),(1,0),(0,1)]
+			for dx, dy in direction:
+				n = 1
+				for i in range(1, 7):
+					if (x + i * dx, y + i * dy) in positions:
+						n += 1
+					else:
+						break
+				for i in range(1, 7):
+					if (x - i * dx, y - i * dy) in positions:
+						n += 1
+					else:
+						break
+				if n == 5:
+					return {
+						'inGame': False,
+						'winner': 'X' if len(state['moves']) % 2 == 0 else 'O',
+						'moves': state['moves'][:] + [(x,y)]
+					}
 			return {
 				'inGame': True,
 				'winner': None,
